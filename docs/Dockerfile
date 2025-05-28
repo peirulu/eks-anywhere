@@ -1,6 +1,8 @@
 FROM klakegg/hugo:ext-alpine
 
-RUN apk add git npm
+# Update package index before installing packages
+RUN apk update && \
+    apk add --no-cache git npm
 
 COPY package.json package-lock.json ./
 
