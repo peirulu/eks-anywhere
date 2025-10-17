@@ -257,3 +257,15 @@ func RemoveEtcdVsphereMachineConfig() VSphereFiller {
 		}
 	}
 }
+
+// WithNetworksForWorkerNodes sets the networks for worker node machine configs.
+func WithNetworksForWorkerNodes(networks []string) VSphereFiller {
+	return func(config VSphereConfig) {
+		for _, m := range config.machineConfigs {
+			// Apply to worker nodes (not control plane or etcd)
+			if !strings.HasSuffix(m.Name, "-cp") && !strings.HasSuffix(m.Name, "-etcd") {
+				m.Spec.Networks = networks
+			}
+		}
+	}
+}

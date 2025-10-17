@@ -8076,3 +8076,16 @@ func TestVSphereKubernetes133BottlerocketKubeletConfiguration(t *testing.T) {
 	)
 	runKubeletConfigurationFlow(test)
 }
+
+// 2-NIC Tests
+func TestVSphere2NICSimpleFlow(t *testing.T) {
+	test := framework.NewClusterE2ETest(
+		t,
+		framework.NewVSphere(t, framework.WithUbuntu133()),
+		framework.WithClusterFiller(
+			api.WithKubernetesVersion(v1alpha1.Kube133),
+			api.WithNetworksForWorkerNodes([]string{"sddc-cgw-network-4", "sddc-cgw-network-1"}),
+		),
+	)
+	runSimpleFlow(test)
+}

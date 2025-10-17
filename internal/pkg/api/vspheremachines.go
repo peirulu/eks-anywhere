@@ -75,3 +75,9 @@ func setSSHKeyForFirstUser(m *anywherev1.VSphereMachineConfig, key string) {
 	m.SetUserDefaults()
 	m.Spec.Users[0].SshAuthorizedKeys = []string{key}
 }
+
+func WithNetworks(networks []string) VSphereMachineConfigFiller {
+	return func(m *anywherev1.VSphereMachineConfig) {
+		m.Spec.Networks = networks
+	}
+}
