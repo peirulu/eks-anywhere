@@ -91,6 +91,19 @@ spec:
 {{ .nodeLabelArgs.ToYaml | indent 12 }}
 {{- end }}
           name: '{{"{{"}} ds.meta_data.hostname {{"}}"}}'
+{{- if and (eq .format "bottlerocket") (gt (len .networks) 1) }}
+      files:
+      - content: |
+          version = 2
+          [eth0]
+          dhcp4 = true
+          primary = true
+          [eth1]
+          dhcp4 = true
+      owner: root:root
+      permissions: "0644"
+      path: /var/lib/netdog/net.toml
+{{- end}}
 {{- if or (and (ne .format "bottlerocket") (or .proxyConfig .registryMirrorMap)) .kubeletConfiguration }}
       files:
 {{- end }}
