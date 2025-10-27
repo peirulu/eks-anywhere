@@ -247,6 +247,15 @@ func WithVSphereMachineConfig(name string, fillers ...VSphereMachineConfigFiller
 	}
 }
 
+// WithNetworksForWorkerMachineConfig sets the Networks field for a specific worker machine config.
+func WithNetworksForWorkerMachineConfig(machineConfigName string, networks []string) VSphereFiller {
+	return func(config VSphereConfig) {
+		if m, ok := config.machineConfigs[machineConfigName]; ok {
+			m.Spec.Networks = networks
+		}
+	}
+}
+
 // RemoveEtcdVsphereMachineConfig removes the etcd VSphereMachineConfig from the cluster spec.
 func RemoveEtcdVsphereMachineConfig() VSphereFiller {
 	return func(config VSphereConfig) {
