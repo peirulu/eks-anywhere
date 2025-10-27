@@ -18,6 +18,12 @@ spec:
         bottlerocketBootstrap:
           imageRepository: {{.bottlerocketBootstrapRepository}}
           imageTag: {{.bottlerocketBootstrapVersion}}
+{{- if and (eq .format "bottlerocket") (gt (len .vsphereMultiNetworks) 1) }}
+        bottlerocketCustomBootstrapContainers:
+        - name: "secondnicbootstrapcontainer"
+          mode: "once"
+          userData: "IyEvdXNyL2Jpbi9lbnYgc2gKc2V0IC1ldW8gcGlwZWZhaWwKCiMgQ3JlYXRlIHRoZSBkaXJlY3RvcnkKbWtkaXIgLXAgLy5ib3R0bGVyb2NrZXQvcm9vdGZzL3Zhci9saWIvbXlfZGlyZWN0b3J5CgojIENyZWF0ZSBuZXRkb2cgZGlyZWN0b3J5IGFuZCB3cml0ZSBuZXQudG9tbCBmaWxlCmVjaG8gLWUgInZlcnNpb24gPSAyXG5bZXRoMF1cbmRoY3A0ID0gdHJ1ZVxucHJpbWFyeSA9IHRydWVcbltldGgxXVxuZGhjcDQgPSB0cnVlIiA+IC8uYm90dGxlcm9ja2V0L3Jvb3Rmcy92YXIvbGliL25ldGRvZy9uZXQudG9tbAoKCgplY2hvICJVc2VyLWRhdGEgc2NyaXB0IGV4ZWN1dGVkLiIKCklOU1RBTkNFX1JFQk9PVEVEPS8uYm90dGxlcm9ja2V0L2Jvb3RzdHJhcC1jb250YWluZXJzL2N1cnJlbnQvcmVib290ZWQKCmlmIFtbICEgLWYgIiRJTlNUQU5DRV9SRUJPT1RFRCIgXV07IHRoZW4KICAjIHJlYm9vdCBpbnN0YW5jZQogIHRvdWNoICIkSU5TVEFOQ0VfUkVCT09URUQiCiAgYXBpY2xpZW50IHJlYm9vdApmaQoKZWNobyAiY29tcGxldGVkIGJvb3RzdHJhcCB0YXNrcyIK"
+{{- end }}
 {{- end }}
 {{- if and .proxyConfig (eq .format "bottlerocket") }}
         proxy:
