@@ -8,6 +8,7 @@ env:
     EKSA_GIT_PRIVATE_KEY: "/tmp/private-key"
     INTEGRATION_TEST_INFRA_CONFIG: "/tmp/test-infra.yml"
     # vsphere variables
+    T_VSPHERE_SECOND_NETWORK: "/SDDC-Datacenter/network/sddc-cgw-network-1"
     T_VSPHERE_TEMPLATE_FOLDER: "/SDDC-Datacenter/vm/Templates"
     T_VSPHERE_TEMPLATE_UBUNTU_1_28: "/SDDC-Datacenter/vm/Templates/ubuntu-kube-v1-28"
     T_VSPHERE_TEMPLATE_UBUNTU_1_29: "/SDDC-Datacenter/vm/Templates/ubuntu-kube-v1-29"
@@ -83,7 +84,6 @@ env:
     T_VSPHERE_DATASTORE: "vsphere_ci_beta_connection:datastore"
     T_VSPHERE_FOLDER: "vsphere_ci_beta_connection:folder"
     T_VSPHERE_NETWORK: "vsphere_ci_beta_connection:network"
-    T_VSPHERE_SECOND_NETWORK: "/SDDC-Datacenter/network/sddc-cgw-network-1"
     T_VSPHERE_PRIVATE_NETWORK: "vsphere_ci_beta_connection:private_network"
     T_VSPHERE_CIDR: "vsphere_ci_beta_connection:vsphere_cidr"
     T_VSPHERE_PRIVATE_NETWORK_CIDR: "vsphere_ci_beta_connection:vsphere_private_network_cidr"
