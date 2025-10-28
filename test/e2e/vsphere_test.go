@@ -3130,7 +3130,7 @@ func TestVSphereKubernetes133Ubuntu2204NetworksSimpleFlow(t *testing.T) {
 			framework.WithWorkerNodeGroup("worker-networks", api.WithCount(1)),
 			api.WithNetworks([]string{
 				os.Getenv("T_VSPHERE_NETWORK"),
-				os.Getenv("T_VSPHERE_PRIVATE_NETWORK"),
+				"/SDDC-Datacenter/network/sddc-cgw-network-4",
 			}),
 		),
 	)
