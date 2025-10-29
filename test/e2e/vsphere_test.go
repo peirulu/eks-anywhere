@@ -5,6 +5,8 @@
 package e2e
 
 import (
+	"context"
+	"fmt"
 	"os"
 	"testing"
 
@@ -3143,7 +3145,96 @@ func TestVSphereKubernetes133Ubuntu2204NetworksSimpleFlow(t *testing.T) {
 			api.WithLicenseToken(licenseToken),
 		),
 	)
-	runSimpleFlowWithoutClusterConfigGeneration(test)
+
+	test.CreateCluster()
+	// Add network interface verification
+	t.Log("Verifying network interfaces are up and running...")
+	if err := verifyVMNetworkInterfaces(t, provider, test.ClusterName); err != nil {
+		t.Fatalf("VM network interface verification failed: %v", err)
+	}
+	test.DeleteCluster()
+
+	//runSimpleFlowWithoutClusterConfigGenerationWithNetworkValidation(test)
+}
+
+// verifyVMNetworkInterfaces verifies that VMs have the expected network interfaces configured at the vSphere level
+func verifyVMNetworkInterfaces(t *testing.T, test *framework.ClusterE2ETest, provider *framework.VSphere) error {
+	ctx := context.Background()
+
+	// Get all machines (VMs) for the cluster
+	machines, err := test.KubectlClient.GetMachines(ctx, test.Cluster(), test.ClusterName)
+	if err != nil {
+		return fmt.Errorf("failed to get machines: %v", err)
+	}
+
+	if len(machines) == 0 {
+		return fmt.Errorf("no machines found for cluster %s", test.ClusterName)
+	}
+
+	// Expected network interfaces based on your test configuration
+	expectedNetworks := []string{
+		"ethernet-0",
+		"ethernet-1",
+	}
+
+	t.Logf("Verifying network interfaces for %d VMs", len(machines))
+
+	for _, machine := range machines {
+		vmName := machine.Metadata.Name
+		t.Logf("Checking network interfaces for VM: %s", vmName)
+
+		// Get network device information for the VM
+		devices, err := provider.GovcClient.DevicesInfo(ctx, "SDDC-Datacenter", vmName, "ethernet-*")
+		if err != nil {
+			return fmt.Errorf("failed to get network devices for VM %s: %v", vmName, err)
+		}
+
+		if len(devices) < len(expectedNetworks) {
+			return fmt.Errorf("VM %s has %d network interfaces, expected at least %d",
+				vmName, len(devices), len(expectedNetworks))
+		}
+
+		t.Logf("VM %s has %d network interfaces configured:", vmName, len(devices))
+		for i, device := range devices {
+			t.Logf("  Interface %d: %s (Label: %s)", i+1, device.Name, device.DeviceInfo.Label)
+		}
+
+		// Verify specific network interface properties if needed
+		if err := validateNetworkDevices(t, devices, expectedNetworks); err != nil {
+			return fmt.Errorf("network device validation failed for VM %s: %v", vmName, err)
+		}
+	}
+
+	t.Log("All VMs have the expected network interfaces configured at vSphere level")
+	return nil
+}
+
+// validateNetworkDevices performs additional validation on network devices
+func validateNetworkDevices(t *testing.T, devices []executables.VirtualDevice, expectedNetworks []string) error {
+	// Basic validation - ensure we have at least the expected number of interfaces
+	if len(devices) < len(expectedNetworks) {
+		return fmt.Errorf("insufficient network interfaces: got %d, expected at least %d",
+			len(devices), len(expectedNetworks))
+	}
+
+	// Additional validation can be added here:
+	// - Check device names/labels
+	// - Verify network backing information
+	// - Check device status
+
+	for i, device := range devices {
+		if device.Name == "" {
+			return fmt.Errorf("network device %d has empty name", i)
+		}
+
+		if device.DeviceInfo.Label == "" {
+			return fmt.Errorf("network device %d (%s) has empty label", i, device.Name)
+		}
+
+		t.Logf("Network device %d validated: %s", i+1, device.DeviceInfo.Label)
+	}
+
+	return nil
 }
 
 func TestVSphereKubernetes128Ubuntu2404SimpleFlow(t *testing.T) {
