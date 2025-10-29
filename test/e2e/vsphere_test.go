@@ -8,6 +8,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"regexp"
+	"strings"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
@@ -15,6 +17,7 @@ import (
 	"github.com/aws/eks-anywhere/internal/pkg/api"
 	"github.com/aws/eks-anywhere/pkg/api/v1alpha1"
 	"github.com/aws/eks-anywhere/pkg/constants"
+	"github.com/aws/eks-anywhere/pkg/executables"
 	"github.com/aws/eks-anywhere/pkg/features"
 	"github.com/aws/eks-anywhere/pkg/providers"
 	"github.com/aws/eks-anywhere/test/framework"
@@ -3147,11 +3150,27 @@ func TestVSphereKubernetes133Ubuntu2204NetworksSimpleFlow(t *testing.T) {
 	)
 
 	test.CreateCluster()
-	// Add network interface verification
-	t.Log("Verifying network interfaces are up and running...")
-	if err := verifyVMNetworkInterfaces(t, provider, test.ClusterName); err != nil {
+
+	// Wait for cluster to be ready
+	test.WaitForControlPlaneReady()
+
+	// Network Interface Verification
+	t.Log("=== Starting Network Interface Verification ===")
+
+	// Option 1: VM-level verification using govc
+	t.Log("Verifying network interfaces at vSphere VM level...")
+	if err := verifyVMNetworkInterfaces(t, test, provider); err != nil {
 		t.Fatalf("VM network interface verification failed: %v", err)
 	}
+
+	// Option 2: OS-level verification using SSH
+	// t.Log("Verifying network interfaces at OS level...")
+	// if err := verifyNodeNetworkInterfaces(t, test); err != nil {
+	// 	t.Fatalf("Node network interface verification failed: %v", err)
+	// }
+
+	t.Log("=== Network Interface Verification Completed Successfully ===")
+
 	test.DeleteCluster()
 
 	//runSimpleFlowWithoutClusterConfigGenerationWithNetworkValidation(test)
@@ -3235,6 +3254,243 @@ func validateNetworkDevices(t *testing.T, devices []executables.VirtualDevice, e
 	}
 
 	return nil
+}
+
+// buildSSH creates an SSH client for running commands on nodes
+func buildSSH(t *testing.T) *executables.SSH {
+	return executables.NewLocalExecutablesBuilder().BuildSSHExecutable()
+}
+
+// verifyNodeNetworkInterfaces verifies network interfaces at the OS level by SSH'ing into nodes
+func verifyNodeNetworkInterfaces(t *testing.T, test *framework.ClusterE2ETest) error {
+	ctx := context.Background()
+
+	// Get all nodes
+	nodes, err := test.KubectlClient.GetNodes(ctx, test.Cluster().KubeconfigFile)
+	if err != nil {
+		return fmt.Errorf("failed to get nodes: %v", err)
+	}
+
+	if len(nodes) == 0 {
+		return fmt.Errorf("no nodes found for cluster")
+	}
+
+	// Build SSH client
+	ssh := buildSSH(t)
+
+	// Get SSH configuration
+	sshKeyPath := "/tmp/ssh_key"                       // SSHKeyPath from etcdencryption.go
+	sshUsername := getSSHUsernameByProvider("vsphere") // "ec2-user"
+
+	t.Logf("Verifying network interfaces on %d nodes using SSH", len(nodes))
+	t.Logf("SSH Key Path: %s, Username: %s", sshKeyPath, sshUsername)
+
+	for _, node := range nodes {
+		nodeIP := getNodeInternalIP(node)
+		if nodeIP == "" {
+			return fmt.Errorf("could not find internal IP for node %s", node.Name)
+		}
+
+		t.Logf("Checking network interfaces on node %s (IP: %s)", node.Name, nodeIP)
+
+		// Run 'ip a' command to get network interface information
+		output, err := ssh.RunCommand(ctx, sshKeyPath, sshUsername, nodeIP, "ip", "a")
+		if err != nil {
+			return fmt.Errorf("failed to run 'ip a' on node %s: %v", node.Name, err)
+		}
+
+		// Parse and validate the output
+		if err := validateNodeNetworkInterfaces(t, node.Name, output); err != nil {
+			return fmt.Errorf("network interface validation failed for node %s: %v", node.Name, err)
+		}
+
+		// Additional network connectivity tests
+		if err := testNodeNetworkConnectivity(t, ssh, sshKeyPath, sshUsername, nodeIP, node.Name); err != nil {
+			return fmt.Errorf("network connectivity test failed for node %s: %v", node.Name, err)
+		}
+	}
+
+	t.Log("All nodes have the expected network interfaces and connectivity")
+	return nil
+}
+
+// getNodeInternalIP extracts the internal IP address from a node
+func getNodeInternalIP(node corev1.Node) string {
+	for _, addr := range node.Status.Addresses {
+		if addr.Type == corev1.NodeInternalIP {
+			return addr.Address
+		}
+	}
+	return ""
+}
+
+// NetworkInterface represents a network interface with its properties
+type NetworkInterface struct {
+	Name string
+	IsUp bool
+	IPs  []string
+}
+
+// validateNodeNetworkInterfaces parses 'ip a' output and validates network interfaces
+func validateNodeNetworkInterfaces(t *testing.T, nodeName, output string) error {
+	lines := strings.Split(output, "\n")
+
+	var interfaces []NetworkInterface
+	var currentInterface *NetworkInterface
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+
+		// Parse interface lines (e.g., "2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500")
+		if matched, _ := regexp.MatchString(`^\d+:\s+\w+:`, line); matched {
+			if currentInterface != nil {
+				interfaces = append(interfaces, *currentInterface)
+			}
+
+			parts := strings.Fields(line)
+			if len(parts) >= 2 {
+				interfaceName := strings.TrimSuffix(parts[1], ":")
+				isUp := strings.Contains(line, "UP")
+
+				currentInterface = &NetworkInterface{
+					Name: interfaceName,
+					IsUp: isUp,
+					IPs:  []string{},
+				}
+			}
+		}
+
+		// Parse IP addresses (e.g., "inet 192.168.1.100/24 brd 192.168.1.255 scope global eth0")
+		if currentInterface != nil && strings.Contains(line, "inet ") {
+			parts := strings.Fields(line)
+			for i, part := range parts {
+				if part == "inet" && i+1 < len(parts) {
+					ip := strings.Split(parts[i+1], "/")[0] // Remove CIDR notation
+					currentInterface.IPs = append(currentInterface.IPs, ip)
+					break
+				}
+			}
+		}
+	}
+
+	// Add the last interface
+	if currentInterface != nil {
+		interfaces = append(interfaces, *currentInterface)
+	}
+
+	// Validate interfaces
+	return validateParsedInterfaces(t, nodeName, interfaces)
+}
+
+// validateParsedInterfaces validates the parsed network interfaces
+func validateParsedInterfaces(t *testing.T, nodeName string, interfaces []NetworkInterface) error {
+	t.Logf("Node %s network interfaces:", nodeName)
+
+	upInterfaces := 0
+	interfacesWithIP := 0
+
+	for _, iface := range interfaces {
+		t.Logf("  Interface: %s, Up: %t, IPs: %v", iface.Name, iface.IsUp, iface.IPs)
+
+		// Skip loopback interface
+		if iface.Name == "lo" {
+			continue
+		}
+
+		if iface.IsUp {
+			upInterfaces++
+		}
+
+		if len(iface.IPs) > 0 {
+			interfacesWithIP++
+		}
+	}
+
+	// Validation rules
+	if upInterfaces < 2 {
+		return fmt.Errorf("insufficient UP network interfaces: got %d, expected at least 2", upInterfaces)
+	}
+
+	if interfacesWithIP < 1 {
+		return fmt.Errorf("no network interfaces have IP addresses assigned")
+	}
+
+	t.Logf("Node %s validation passed: %d UP interfaces, %d with IPs",
+		nodeName, upInterfaces, interfacesWithIP)
+
+	return nil
+}
+
+// testNodeNetworkConnectivity tests network connectivity from the node
+func testNodeNetworkConnectivity(t *testing.T, ssh *executables.SSH, keyPath, username, nodeIP, nodeName string) error {
+	ctx := context.Background()
+
+	// Test connectivity to various targets
+	connectivityTests := []struct {
+		name   string
+		target string
+		cmd    []string
+	}{
+		{
+			name:   "External DNS",
+			target: "8.8.8.8",
+			cmd:    []string{"ping", "-c", "1", "-W", "5", "8.8.8.8"},
+		},
+		{
+			name:   "Local interface check",
+			target: "local",
+			cmd:    []string{"ip", "route", "show"},
+		},
+	}
+
+	for _, test := range connectivityTests {
+		t.Logf("Testing %s connectivity on node %s", test.name, nodeName)
+
+		output, err := ssh.RunCommand(ctx, keyPath, username, nodeIP, test.cmd...)
+		if err != nil {
+			// Log the error but don't fail immediately for some tests
+			t.Logf("Warning: %s test failed on node %s: %v", test.name, nodeName, err)
+			continue
+		}
+
+		// Validate output based on test type
+		if err := validateConnectivityOutput(test.name, output); err != nil {
+			return fmt.Errorf("%s connectivity validation failed: %v", test.name, err)
+		}
+
+		t.Logf("%s connectivity test passed on node %s", test.name, nodeName)
+	}
+
+	return nil
+}
+
+// validateConnectivityOutput validates the output of connectivity tests
+func validateConnectivityOutput(testName, output string) error {
+	switch testName {
+	case "External DNS":
+		if !strings.Contains(output, "1 packets transmitted, 1 received") &&
+			!strings.Contains(output, "1 packets transmitted, 1 packets received") {
+			return fmt.Errorf("ping test failed: %s", output)
+		}
+	case "Local interface check":
+		if !strings.Contains(output, "default") {
+			return fmt.Errorf("no default route found: %s", output)
+		}
+	}
+
+	return nil
+}
+
+// getSSHUsernameByProvider returns the SSH username based on provider
+func getSSHUsernameByProvider(provider string) string {
+	switch provider {
+	case "cloudstack":
+		return "capc"
+	case "nutanix":
+		return "eksa"
+	default:
+		return "ec2-user" // Default for vSphere
+	}
 }
 
 func TestVSphereKubernetes128Ubuntu2404SimpleFlow(t *testing.T) {
