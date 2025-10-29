@@ -3122,7 +3122,7 @@ func TestVSphereKubernetes133Ubuntu2204SimpleFlow(t *testing.T) {
 	)
 	runSimpleFlowWithoutClusterConfigGeneration(test)
 }
-func TestVSphereKubernetes133Ubuntu2404NetworksSimpleFlow(t *testing.T) {
+func TestVSphereKubernetes133Ubuntu2204NetworksSimpleFlow(t *testing.T) {
 	licenseToken := framework.GetLicenseToken()
 	provider := framework.NewVSphere(t,
 		framework.WithVSphereWorkerNodeGroup(
@@ -3130,7 +3130,7 @@ func TestVSphereKubernetes133Ubuntu2404NetworksSimpleFlow(t *testing.T) {
 			framework.WithWorkerNodeGroup("worker-networks", api.WithCount(1)),
 			api.WithNetworks([]string{
 				os.Getenv("T_VSPHERE_NETWORK"),
-				os.Getenv("T_VSPHERE_SECOND_NETWORK"),
+				"/SDDC-Datacenter/network/sddc-cgw-network-1",
 			}),
 		),
 	)
@@ -3138,7 +3138,7 @@ func TestVSphereKubernetes133Ubuntu2404NetworksSimpleFlow(t *testing.T) {
 		t,
 		provider,
 	).WithClusterConfig(
-		provider.WithKubeVersionAndOS(v1alpha1.Kube133, framework.Ubuntu2404, nil),
+		provider.WithKubeVersionAndOS(v1alpha1.Kube133, framework.Ubuntu2204, nil),
 		api.ClusterToConfigFiller(
 			api.WithLicenseToken(licenseToken),
 		),
