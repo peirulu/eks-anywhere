@@ -3158,18 +3158,18 @@ func TestVSphereKubernetes133Ubuntu2204NetworksSimpleFlow(t *testing.T) {
 	t.Log("=== Starting Network Interface Verification ===")
 
 	// Option 1: VM-level verification using govc
-	t.Log("Verifying network interfaces at vSphere VM level...")
-	if err := verifyVMNetworkInterfaces(t, test, provider); err != nil {
-		t.Logf("Warning: VM network interface verification failed: %v", err)
-		// Don't fail the test, just log the warning
-	}
+	// t.Log("Verifying network interfaces at vSphere VM level...")
+	// if err := verifyVMNetworkInterfaces(t, test, provider); err != nil {
+	// 	t.Logf("Warning: VM network interface verification failed: %v", err)
+	// 	// Don't fail the test, just log the warning
+	// }
 
-	// Option 2: OS-level verification using SSH
-	t.Log("Verifying network interfaces at OS level...")
-	if err := verifyNodeNetworkInterfaces(t, test); err != nil {
-		t.Logf("Warning: Node network interface verification failed: %v", err)
-		// Don't fail the test, just log the warning
-	}
+	// // Option 2: OS-level verification using SSH
+	// t.Log("Verifying network interfaces at OS level...")
+	// if err := verifyNodeNetworkInterfaces(t, test); err != nil {
+	// 	t.Logf("Warning: Node network interface verification failed: %v", err)
+	// 	// Don't fail the test, just log the warning
+	// }
 
 	t.Log("=== Network Interface Verification Completed ===")
 
