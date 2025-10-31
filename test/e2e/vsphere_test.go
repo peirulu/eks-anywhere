@@ -3658,10 +3658,6 @@ func TestVSphereKubernetes133Ubuntu2204NetworksSimpleFlow(t *testing.T) {
 			worker0,
 			framework.WithWorkerNodeGroup(worker0, api.WithCount(1)),
 			framework.WithSecondNetworkForWorkerNodes(),
-			// api.WithNetworks([]string{
-			// 	os.Getenv("T_VSPHERE_NETWORK"),
-			// 	os.Getenv("T_VSPHERE_SECOND_NETWORK"),
-			// }),
 		),
 	)
 	test := framework.NewClusterE2ETest(
@@ -3674,8 +3670,15 @@ func TestVSphereKubernetes133Ubuntu2204NetworksSimpleFlow(t *testing.T) {
 		),
 	)
 
-	// [todo]This part will be replaced with a flow with network validation
-	runSimpleFlowWithoutClusterConfigGeneration(test)
+	test.CreateCluster()
+
+	// Wait for cluster to be ready
+	test.WaitForControlPlaneReady()
+
+	// Validate that both NICs are up and have different external IPs
+	ValidateNetworkUp(test)
+
+	test.DeleteCluster()
 
 }
 
