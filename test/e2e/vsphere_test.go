@@ -3676,7 +3676,7 @@ func TestVSphereKubernetes133Ubuntu2204NetworksSimpleFlow(t *testing.T) {
 	test.WaitForControlPlaneReady()
 
 	// Validate that both NICs are up and have different external IPs
-	ValidateNetworkUp(test)
+	test.ValidateNetworkUp()
 
 	test.DeleteCluster()
 
