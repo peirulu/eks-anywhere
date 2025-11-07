@@ -21,11 +21,11 @@ spec:
 {{- end }}
 {{- if and (eq .format "bottlerocket") (gt (len .vsphereMultiNetworks) 1) }}
         bottlerocketCustomBootstrapContainers:
-        - name: "second-network-interface-bootstrap-container"
+        - name: "second-network-interface-bootstrap-container-after-migration"
           mode: "once"
-          # imageRepository: "public.ecr.aws/p2x5x2t2/bottlerocket-bootstrap-vsphere-multi-network"
-          # imageTag: "v1-34-8-latest"
-          userData: "IyEvdXNyL2Jpbi9lbnYgc2gKc2V0IC1ldW8gcGlwZWZhaWwKCiMgQ2hlY2sgcmVib290IG1hcmtlciBmaXJzdCAtIHNraXAgaWYgYWxyZWFkeSBwcm9jZXNzZWQKSU5TVEFOQ0VfUkVCT09URUQ9Ly5ib3R0bGVyb2NrZXQvYm9vdHN0cmFwLWNvbnRhaW5lcnMvY3VycmVudC9yZWJvb3RlZAppZiBbWyAtZiAiJElOU1RBTkNFX1JFQk9PVEVEIiBdXTsgdGhlbgogICAgZWNobyAiQ29uZmlndXJhdGlvbiBhbHJlYWR5IHByb2Nlc3NlZCIKICAgIGV4aXQgMApmaQoKIyB3cml0ZSBuZXQudG9tbCBmaWxlIGFuZCBlbmNvZGUgaXQgdG8gYmFzZTY0CgphcGljbGllbnQgbmV0d29yayBjb25maWd1cmUgYmFzZTY0OmRtVnljMmx2YmlBOUlETUtDbHRsZEdnd1hRcGthR053TkNBOUlIUnlkV1VLY0hKcGJXRnllU0E5SUhSeWRXVUtDbHRsZEdneFhRcGthR053TkNBOUlIUnlkV1VLCgoKIyBDdXJyZW50IHN5c3RlbSAtIGhhbmRsZSByZWJvb3Qgb3Vyc2VsdmVzCnRvdWNoICIkSU5TVEFOQ0VfUkVCT09URUQiCmFwaWNsaWVudCByZWJvb3QK"
+          imageRepository: "public.ecr.aws/p2x5x2t2/bottlerocket-bootstrap-vsphere-multi-network"
+          imageTag: "v1-33-17-269e957d5f8a0f33a242aef7e1eca10bb9bb99cd"
+          # userData: "IyEvdXNyL2Jpbi9lbnYgc2gKc2V0IC1ldW8gcGlwZWZhaWwKCiMgQ2hlY2sgcmVib290IG1hcmtlciBmaXJzdCAtIHNraXAgaWYgYWxyZWFkeSBwcm9jZXNzZWQKSU5TVEFOQ0VfUkVCT09URUQ9Ly5ib3R0bGVyb2NrZXQvYm9vdHN0cmFwLWNvbnRhaW5lcnMvY3VycmVudC9yZWJvb3RlZAppZiBbWyAtZiAiJElOU1RBTkNFX1JFQk9PVEVEIiBdXTsgdGhlbgogICAgZWNobyAiQ29uZmlndXJhdGlvbiBhbHJlYWR5IHByb2Nlc3NlZCIKICAgIGV4aXQgMApmaQoKIyB3cml0ZSBuZXQudG9tbCBmaWxlIGFuZCBlbmNvZGUgaXQgdG8gYmFzZTY0CgphcGljbGllbnQgbmV0d29yayBjb25maWd1cmUgYmFzZTY0OmRtVnljMmx2YmlBOUlETUtDbHRsZEdnd1hRcGthR053TkNBOUlIUnlkV1VLY0hKcGJXRnllU0E5SUhSeWRXVUtDbHRsZEdneFhRcGthR053TkNBOUlIUnlkV1VLCgoKIyBDdXJyZW50IHN5c3RlbSAtIGhhbmRsZSByZWJvb3Qgb3Vyc2VsdmVzCnRvdWNoICIkSU5TVEFOQ0VfUkVCT09URUQiCmFwaWNsaWVudCByZWJvb3QK"
 {{- end }}
 {{- if and .proxyConfig (eq .format "bottlerocket") }}
         proxy:
