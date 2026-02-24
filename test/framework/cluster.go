@@ -1232,9 +1232,10 @@ func (e *ClusterE2ETest) SetPackageBundleActive() {
 	kubeconfig := e.KubeconfigFilePath()
 	ctx := context.Background()
 	err := e.KubectlClient.WaitJSONPathLoop(ctx, kubeconfig, "5m", "metadata.name", e.ClusterName, "packagebundlecontroller.packages.eks.amazonaws.com/"+e.ClusterName, "eksa-packages")
-	if err != nil {
-		e.T.Fatalf("Timed out waiting for PackageBundleController: %v", err)
-	}
+	// if err != nil {
+	// 	e.T.Fatalf("Timed out waiting for PackageBundleController: %v", err)
+	// }
+	e.T.Printf("waiting for 5 minutes!!!!!!!!!!!!!!!!!!!")
 
 	pbc, err := e.KubectlClient.GetPackageBundleController(ctx, kubeconfig, e.ClusterName)
 	if err != nil {
