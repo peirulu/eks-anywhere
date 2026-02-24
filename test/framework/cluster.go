@@ -1230,6 +1230,9 @@ func (e *ClusterE2ETest) DeleteNamespace(namespace string) {
 // SetPackageBundleActive will set the current packagebundle to the active state.
 func (e *ClusterE2ETest) SetPackageBundleActive() {
 	kubeconfig := e.KubeconfigFilePath()
+
+	e.T.Printf("!!!!!!!!!!!!!!!!!kubeconfig is %v",kubeconfig)
+
 	pbc, err := e.KubectlClient.GetPackageBundleController(context.Background(), kubeconfig, e.ClusterName)
 	if err != nil {
 		e.T.Fatalf("Error getting PackageBundleController: %v", err)

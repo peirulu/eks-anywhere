@@ -686,6 +686,7 @@ func (k *Kubectl) GetPackageBundleController(ctx context.Context, kubeconfigFile
 	if err != nil {
 		return packagesv1.PackageBundleController{}, fmt.Errorf("failed to execute cmd \"%s\": %w", strings.Join(params, " "), err)
 	}
+	fmt.Printf("@@@@@@@@@@@@@@@@@Output is %v", stdOut)
 	pbc := &packagesv1.PackageBundleController{}
 	err = json.Unmarshal(stdOut.Bytes(), pbc)
 	if err != nil {
