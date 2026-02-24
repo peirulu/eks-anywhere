@@ -1234,6 +1234,7 @@ func (e *ClusterE2ETest) SetPackageBundleActive() {
 	// if err != nil {
 	// 	e.T.Fatalf("Timed out waiting for PackageBundleController: %v", err)
 	// }
+	e.T.Printf("Setting PackageBundleController %s to Active", e.ClusterName))
 
 	pbc, err := e.KubectlClient.GetPackageBundleController(ctx, kubeconfig, e.ClusterName)
 	if err != nil {
