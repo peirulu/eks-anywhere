@@ -12,8 +12,13 @@ kubeadmConfigPatches:
       imageTag: {{.CorednsVersion}}
     etcd:
       local:
+{{- if (eq (atoi $kube_minor_version) 36) }}
+        imageRepository: public.ecr.aws/p2x5x2t2/etcd-io
+        imageTag: v3.6.12-eks-1-36-5.pre
+{{- else }}
         imageRepository: {{.EtcdRepository}}
         imageTag: {{.EtcdVersion}}
+{{- end }}
     imageRepository: {{.KubernetesRepository}}
     kubernetesVersion: {{.KubernetesVersion}}
     apiServer:
